@@ -1,95 +1,107 @@
+/*
+Name: Becca Miller
+Date: April 7, 2026
+
+Description:
+This app fetches country data from the REST Countries API.
+It filters and displays countries that have at least one neighboring country
+starting with the letter A or I.
+*/
+
 import { useEffect, useState } from "react";
 import NeighborsA from "./NeighborsA";
 import NeighborsI from "./NeighborI";
+import "./App.css";
 
 function App() {
-  const [countries, setCountries] = useState([]);
-  const [countryCodes, setCountryCodes] = useState({});
-  const [filteredCountries, setFilteredCountries] = useState([]);
-  const [selected, setSelected] = useState("");
+  // Store all countries from the API
+  let [countries, setCountries] = useState([]);
 
+  // Store country codes and matching official country names
+  let [countryCodes, setCountryCodes] = useState({});
+
+  // Store filtered countries for display
+  let [filteredCountries, setFilteredCountries] = useState([]);
+
+  // Store which button was clicked
+  let [selected, setSelected] = useState("");
+
+  // Fetch country data when the component loads
   useEffect(() => {
-    fetch("https://restcountries.com/v3.1/all?fields=name,capital,flags,borders,cca3")
-      .then((response) => response.json())
-      .then((data) => {
-        setCountries(data);
+    let getCountries = async () => {
+      let response = await fetch(
+        "https://restcountries.com/v3.1/all?fields=name,capital,flags,borders,cca3"
+      );
 
-        const codeMap = {};
+      let data = await response.json();
+      setCountries(data);
 
-        data.forEach((country) => {
-          codeMap[country.cca3] = country.name.official;
-        });
+      let codeMap = {};
 
-        setCountryCodes(codeMap);
-      })
-      .catch((error) => {
-        console.log("ERROR:", error);
+      data.forEach((country) => {
+        codeMap[country.cca3] = country.name.official;
       });
+
+      setCountryCodes(codeMap);
+    };
+
+    getCountries();
   }, []);
 
-  const getCountriesWithNeighborStartingWith = (letter) => {
-    return countries.filter((country) => {
+  // Filter countries based on whether one of their neighbors starts with a chosen letter
+  let getCountriesWithNeighborStartingWith = (letter) => {
+    let filteredList = countries.filter((country) => {
       if (!country.borders) {
         return false;
       }
 
       return country.borders.some((code) => {
-        const neighborName = countryCodes[code];
+        let neighborName = countryCodes[code];
         return neighborName && neighborName.startsWith(letter);
       });
     });
+
+    return filteredList;
   };
 
-  const handleAButton = () => {
-    setFilteredCountries(getCountriesWithNeighborStartingWith("A"));
+  // Display countries with neighbors starting with A
+  let handleAButton = () => {
+    let results = getCountriesWithNeighborStartingWith("A");
+    setFilteredCountries(results);
     setSelected("A");
   };
 
-  const handleIButton = () => {
-    setFilteredCountries(getCountriesWithNeighborStartingWith("I"));
+  // Display countries with neighbors starting with I
+  let handleIButton = () => {
+    let results = getCountriesWithNeighborStartingWith("I");
+    setFilteredCountries(results);
     setSelected("I");
   };
 
   return (
-    <div
-      style={{
-        color: "black",
-        backgroundColor: "white",
-        padding: "40px",
-        textAlign: "center",
-      }}
-    >
+    <div className="container">
       <h1>Neighboring Countries</h1>
 
-      <button
-        onClick={handleAButton}
-        style={{ margin: "10px", padding: "10px 15px" }}
-      >
-        NEIGHBORS STARTING WITH A
-      </button>
+      <button onClick={handleAButton}>NEIGHBORS STARTING WITH A</button>
+      <button onClick={handleIButton}>NEIGHBORS STARTING WITH I</button>
 
-      <button
-        onClick={handleIButton}
-        style={{ margin: "10px", padding: "10px 15px" }}
-      >
-        NEIGHBORS STARTING WITH I
-      </button>
+      <div className="results">
+        {selected === "" && <p>Click a button to see results.</p>}
 
-      {selected === "" && <p>Click a button to see results.</p>}
+        {selected === "A" && (
+          <NeighborsA
+            countries={filteredCountries}
+            countryCodes={countryCodes}
+          />
+        )}
 
-      {selected === "A" && (
-        <NeighborsA
-          countries={filteredCountries}
-          countryCodes={countryCodes}
-        />
-      )}
-
-      {selected === "I" && (
-        <NeighborsI
-          countries={filteredCountries}
-          countryCodes={countryCodes}
-        />
-      )}
+        {selected === "I" && (
+          <NeighborsI
+            countries={filteredCountries}
+            countryCodes={countryCodes}
+          />
+        )}
+      </div>
     </div>
   );
 }
